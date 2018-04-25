@@ -1,11 +1,24 @@
 import React, { Component } from 'react';
-import { Text, View, StyleSheet, Image, Button } from 'react-native';
+import {
+  Text,
+  View,
+  StyleSheet,
+  Image,
+  Button,
+  TouchableHighlight,
+} from 'react-native';
 import Expo from 'expo';
 
 export default class App extends Component {
   state = {
     chosenImage: null,
+    customCameraReady: false,
+    cameraType: Expo.Camera.Constants.Type.back,
   };
+
+  componentDidMount() {
+    this._launchCustomCameraAsync();
+  }
 
   _launchCameraRollAsync = async () => {
     let { status } = await Expo.Permissions.askAsync(
@@ -32,11 +45,30 @@ export default class App extends Component {
     let img = await Expo.ImagePicker.launchCameraAsync({ allowsEditing: true });
     this.setState({ takenImage: img });
 
-  // -----------use this to flip the take image horizontally and/or vertically...
-  //   let flippedImage = await Expo.ImageManipulator.manipulate(img.uri, [
-  //     {flip: {vertical: false, horizontal: false}}]);
-  //   this.setState({ takenImage: flippedImage });
+    // you can use this to flip the take image horizontally and/or vertically...
+    //   let flippedImage = await Expo.ImageManipulator.manipulate(img.uri, [
+    //     {flip: {vertical: false, horizontal: false}}]);
+    //   this.setState({ takenImage: flippedImage });
   };
+
+  _launchCustomCameraAsync = async () => {
+    let { status } = await Expo.Permissions.askAsync(Expo.Permissions.CAMERA);
+    if (status !== 'granted') {
+      console.error('Camera roll permission not granted');
+      return;
+    }
+    this.setState({
+      customCameraReady: true,
+    });
+  };
+
+  _flipCamera = () => {
+    if (this.state.cameraType === Expo.Camera.Constants.Type.back) {
+      this.setState({ cameraType: Expo.Camera.Constants.Type.front });
+    } else {
+      this.setState({ cameraType: Expo.Camera.Constants.Type.back });
+    }
+  }
 
   render() {
     return (
@@ -67,6 +99,21 @@ export default class App extends Component {
             this._launchCameraAsync();
           }}
         />
+
+        {(this.state.customCameraReady &&
+          <TouchableHighlight
+            onPress={() => {
+             this._flipCamera();
+            }}>
+            <Expo.Camera
+              style={{
+                width: 400,
+                height: 400,
+              }}
+              type={this.state.cameraType}
+            />
+          </TouchableHighlight>) ||
+          null}
 
         {(this.state.chosenImage &&
           <Image
